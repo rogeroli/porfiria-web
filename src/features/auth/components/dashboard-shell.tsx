@@ -11,9 +11,9 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { logoutUser } from '@/services/auth/auth-service';
-import { AuthSession, UserProfile } from '../types/auth';
+import { AuthSession, UserProfile, UserStatus } from '../types/auth';
 import { clearAuthSession, getAuthSession, getRefreshToken } from '../utils/auth-storage';
 
 const profileLabels: Record<UserProfile, string> = {
@@ -45,25 +45,45 @@ const summaryCards = [
 
 export function DashboardShell() {
   const router = useRouter();
-  const [session] = useState<(AuthSession & { expiresAt: number }) | null>(() => getAuthSession());
+  const [session, setSession] = useState<(AuthSession & { expiresAt: number }) | null>(null);
+  const [hasMounted, setHasMounted] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setSession(getAuthSession());
+      setHasMounted(true);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  useEffect(() => {
+    if (!hasMounted) {
+      return;
+    }
+
     if (!session) {
       router.replace('/login');
-    }
-  }, [router, session]);
-
-  const expiresAtLabel = useMemo(() => {
-    if (!session) {
-      return '';
+      return;
     }
 
-    return new Intl.DateTimeFormat('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(session.expiresAt));
-  }, [session]);
+    if (session.user.status === UserStatus.Pending) {
+      clearAuthSession();
+      router.replace('/login?reason=email-pending');
+      return;
+    }
+
+    if (session.mustChangePassword) {
+      router.replace('/change-password');
+      return;
+    }
+
+    if (session.user.status !== UserStatus.Available) {
+      clearAuthSession();
+      router.replace('/login');
+    }
+  }, [hasMounted, router, session]);
 
   async function handleLogout(): Promise<void> {
     const refreshToken = getRefreshToken();
@@ -78,7 +98,7 @@ export function DashboardShell() {
     }
   }
 
-  if (!session) {
+  if (!hasMounted || !session) {
     return null;
   }
 
@@ -119,6 +139,7 @@ export function DashboardShell() {
                 <button
                   type="button"
                   className="mt-2 flex w-full items-center gap-3 rounded-[10px] px-3 py-3 text-left text-sm font-semibold text-[#343434] transition hover:bg-[#f7fafd]"
+                  onClick={() => router.push('/change-password')}
                   role="menuitem"
                 >
                   <UserRoundCog className="h-4 w-4 text-[#43d477]" aria-hidden="true" />
@@ -159,7 +180,7 @@ export function DashboardShell() {
                 <ShieldCheck className="h-5 w-5 text-[#43d477]" aria-hidden="true" />
                 <div>
                   <p className="text-sm font-bold">{profileLabels[session.user.profile]}</p>
-                  <p className="text-xs text-white/70">Access token até {expiresAtLabel}</p>
+                  <p className="text-xs text-white/70">Sessão autenticada</p>
                 </div>
               </div>
             </div>

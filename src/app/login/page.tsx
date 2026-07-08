@@ -3,7 +3,20 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { LoginForm } from '@/features/auth/components/login-form';
 
-export default function LoginPage() {
+interface LoginPageProps {
+  searchParams: Promise<{
+    reason?: string;
+  }>;
+}
+
+const loginNotices: Record<string, string> = {
+  'email-pending': 'Confirme seu email para liberar o acesso à plataforma.',
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const noticeMessage = params.reason ? loginNotices[params.reason] : undefined;
+
   return (
     <main className="min-h-screen bg-[#fbfbfd]">
       <header className="border-b border-[#ececec] bg-white">
@@ -65,7 +78,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <LoginForm />
+          <LoginForm noticeMessage={noticeMessage} />
         </div>
       </section>
     </main>

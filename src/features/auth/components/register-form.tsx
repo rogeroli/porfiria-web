@@ -31,7 +31,7 @@ export function RegisterForm() {
 
   async function onSubmit(data: RegisterFormData): Promise<void> {
     await registerMutation.mutateAsync(data);
-    router.replace('/?registered=success');
+    router.replace('/?registered=pending');
   }
 
   return (

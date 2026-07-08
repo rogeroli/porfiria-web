@@ -6,10 +6,15 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { useLoginUser } from '../hooks/use-login-user';
 import { loginSchema, LoginFormData } from '../schemas/login-schema';
+import { UserStatus } from '../types/auth';
 import { saveAuthSession } from '../utils/auth-storage';
 import { getApiErrorMessage } from '../utils/get-api-error-message';
 
-export function LoginForm() {
+interface LoginFormProps {
+  noticeMessage?: string;
+}
+
+export function LoginForm({ noticeMessage }: LoginFormProps) {
   const router = useRouter();
   const loginMutation = useLoginUser();
   const form = useForm<LoginFormData>({
@@ -23,6 +28,11 @@ export function LoginForm() {
   async function onSubmit(data: LoginFormData): Promise<void> {
     const session = await loginMutation.mutateAsync(data);
     saveAuthSession(session);
+    if (session.mustChangePassword || session.user.status === UserStatus.ChangePassword) {
+      router.replace('/change-password');
+      return;
+    }
+
     router.replace('/dashboard');
   }
 
@@ -69,6 +79,18 @@ export function LoginForm() {
           </p>
         ) : null}
       </div>
+
+      <div className="-mt-2 flex justify-end">
+        <a className="text-sm font-bold text-[#1f3b64] hover:text-[#43d477]" href="/forgot-password">
+          Esqueci minha senha
+        </a>
+      </div>
+
+      {noticeMessage ? (
+        <div className="rounded-[10px] border border-[#c4e4da] bg-[#e7f4f0] px-4 py-3 text-sm font-semibold leading-6 text-[#1f3b64]">
+          {noticeMessage}
+        </div>
+      ) : null}
 
       {loginMutation.isError ? (
         <div className="rounded-[10px] border border-[#fbb0b0] bg-[#ffdbdf] px-4 py-3 text-sm font-semibold text-[#993838]">

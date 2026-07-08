@@ -46,7 +46,7 @@ interface HomePageProps {
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
-  const shouldShowRegistrationSuccess = params.registered === 'success';
+  const shouldShowRegistrationPending = params.registered === 'pending';
 
   return (
     <main className="min-h-screen bg-[#fbfbfd]">
@@ -87,13 +87,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <section id="sistema" className="bg-white">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-[1.05fr_0.95fr] md:items-center md:py-20">
           <div>
-            {shouldShowRegistrationSuccess ? (
+            {shouldShowRegistrationPending ? (
               <div
                 className="mb-5 rounded-[10px] border border-[#c4e4da] bg-[#e7f4f0] px-4 py-3 text-sm font-semibold leading-6 text-[#1f3b64]"
                 role="status"
               >
-                Cadastro realizado com sucesso. Em breve você poderá acessar a plataforma com seu
-                login.
+                Cadastro realizado com sucesso. Enviamos um email de confirmação para ativar seu
+                acesso.
               </div>
             ) : null}
 
