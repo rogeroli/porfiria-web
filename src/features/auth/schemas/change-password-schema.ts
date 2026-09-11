@@ -6,7 +6,6 @@ const passwordPolicyMessage =
 
 export const changePasswordSchema = z
   .object({
-    email: z.string().email('Informe um email valido.'),
     currentPassword: z.string().min(1, 'Informe a senha atual ou temporaria.'),
     newPassword: z.string().regex(passwordPolicyRegex, passwordPolicyMessage),
     confirmPassword: z.string().min(1, 'Confirme a nova senha.'),

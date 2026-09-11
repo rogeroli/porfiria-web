@@ -11,6 +11,7 @@ interface LoginPageProps {
 
 const loginNotices: Record<string, string> = {
   'email-pending': 'Confirme seu email para liberar o acesso à plataforma.',
+  'session-expired': 'Sua sessão expirou ou não foi encontrada. Faça login novamente para continuar.',
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -48,7 +49,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </h1>
           <p className="mt-5 text-sm leading-7 text-white/80 md:text-base">
             Use seu email e senha para acessar a dashboard inicial. Seu access token é válido por
-            30 minutos e a sessão poderá ser renovada com refresh token.
+            30 minutos; depois desse período, faça login novamente para continuar.
           </p>
 
           <div className="mt-8 grid gap-4">
@@ -61,7 +62,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <div className="flex gap-3">
               <TimerReset className="mt-0.5 h-5 w-5 flex-none text-[#43d477]" aria-hidden="true" />
               <p className="text-sm font-medium leading-6 text-white/90">
-                Refresh token preparado para manter a sessão com segurança.
+                Redirecionamento para login quando a sessão expirar.
               </p>
             </div>
           </div>

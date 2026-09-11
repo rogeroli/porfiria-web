@@ -3,31 +3,33 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoaderCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useActiveProfiles } from '../hooks/use-active-profiles';
 import { useRegisterUser } from '../hooks/use-register-user';
 import { registerSchema, RegisterFormData } from '../schemas/register-schema';
-import { UserProfile } from '../types/auth';
 import { getApiErrorMessage } from '../utils/get-api-error-message';
-
-const profileOptions = [
-  { value: UserProfile.Patient, label: 'Paciente' },
-  { value: UserProfile.Doctor, label: 'Médico' },
-  { value: UserProfile.Researcher, label: 'Pesquisador' },
-];
 
 export function RegisterForm() {
   const router = useRouter();
   const registerMutation = useRegisterUser();
+  const profilesQuery = useActiveProfiles();
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',
-      profile: UserProfile.Patient,
+      profileId: '',
       email: '',
       password: '',
       confirmPassword: '',
     },
   });
+
+  useEffect(() => {
+    if (!form.getValues('profileId') && profilesQuery.data?.[0]) {
+      form.setValue('profileId', profilesQuery.data[0].id, { shouldValidate: true });
+    }
+  }, [form, profilesQuery.data]);
 
   async function onSubmit(data: RegisterFormData): Promise<void> {
     await registerMutation.mutateAsync(data);
@@ -62,21 +64,26 @@ export function RegisterForm() {
           Perfil
         </label>
         <select
-          id="profile"
+          id="profileId"
           className="mt-2 h-12 w-full rounded-[10px] border border-[#ececec] bg-white px-4 text-sm font-semibold text-[#343434] shadow-sm transition focus:border-[#43d477] focus:ring-[#43d477]"
-          aria-invalid={Boolean(form.formState.errors.profile)}
-          aria-describedby={form.formState.errors.profile ? 'profile-error' : undefined}
-          {...form.register('profile')}
+          aria-invalid={Boolean(form.formState.errors.profileId)}
+          aria-describedby={form.formState.errors.profileId ? 'profile-error' : undefined}
+          {...form.register('profileId')}
         >
-          {profileOptions.map((profile) => (
-            <option key={profile.value} value={profile.value}>
-              {profile.label}
+          {profilesQuery.data?.map((profile) => (
+            <option key={profile.id} value={profile.id}>
+              {profile.name}
             </option>
           ))}
         </select>
-        {form.formState.errors.profile ? (
+        {form.formState.errors.profileId ? (
           <p className="mt-2 text-sm font-medium text-[#f63c3c]" id="profile-error">
-            {form.formState.errors.profile.message}
+            {form.formState.errors.profileId.message}
+          </p>
+        ) : null}
+        {profilesQuery.isError ? (
+          <p className="mt-2 text-sm font-medium text-[#f63c3c]">
+            {getApiErrorMessage(profilesQuery.error)}
           </p>
         ) : null}
       </div>

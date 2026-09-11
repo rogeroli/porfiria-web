@@ -2,25 +2,22 @@
 
 import {
   BookOpenCheck,
+  FileQuestion,
   GraduationCap,
   LogOut,
+  Plus,
   Settings,
   ShieldCheck,
   UserRoundCog,
   UsersRound,
 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { logoutUser } from '@/services/auth/auth-service';
-import { AuthSession, UserProfile, UserStatus } from '../types/auth';
+import { getCurrentUser, logoutUser } from '@/services/auth/auth-service';
+import { AuthSession, UserRole, UserStatus } from '../types/auth';
 import { clearAuthSession, getAuthSession, getRefreshToken } from '../utils/auth-storage';
-
-const profileLabels: Record<UserProfile, string> = {
-  [UserProfile.Patient]: 'Paciente',
-  [UserProfile.Doctor]: 'Médico',
-  [UserProfile.Researcher]: 'Pesquisador',
-};
 
 const summaryCards = [
   {
@@ -51,8 +48,30 @@ export function DashboardShell() {
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      setSession(getAuthSession());
-      setHasMounted(true);
+      const storedSession = getAuthSession();
+
+      if (!storedSession) {
+        setHasMounted(true);
+        return;
+      }
+
+      getCurrentUser()
+        .then((user) => {
+          const refreshedSession = getAuthSession() ?? storedSession;
+
+          setSession({
+            ...refreshedSession,
+            mustChangePassword: user.status === UserStatus.ChangePassword,
+            user,
+          });
+        })
+        .catch(() => {
+          clearAuthSession();
+          setSession(null);
+        })
+        .finally(() => {
+          setHasMounted(true);
+        });
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
@@ -145,6 +164,37 @@ export function DashboardShell() {
                   <UserRoundCog className="h-4 w-4 text-[#43d477]" aria-hidden="true" />
                   Alterar senha
                 </button>
+                {session.user.role === UserRole.Admin ? (
+                  <>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 rounded-[10px] px-3 py-3 text-left text-sm font-semibold text-[#343434] transition hover:bg-[#f7fafd]"
+                      onClick={() => router.push('/admin/questionnaires')}
+                      role="menuitem"
+                    >
+                      <FileQuestion className="h-4 w-4 text-[#43d477]" aria-hidden="true" />
+                      Gerenciar questionarios
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 rounded-[10px] px-3 py-3 text-left text-sm font-semibold text-[#343434] transition hover:bg-[#f7fafd]"
+                      onClick={() => router.push('/admin/profiles')}
+                      role="menuitem"
+                    >
+                      <UsersRound className="h-4 w-4 text-[#43d477]" aria-hidden="true" />
+                      Gerenciar perfis
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 rounded-[10px] px-3 py-3 text-left text-sm font-semibold text-[#343434] transition hover:bg-[#f7fafd]"
+                      onClick={() => router.push('/admin/profile-trails')}
+                      role="menuitem"
+                    >
+                      <BookOpenCheck className="h-4 w-4 text-[#43d477]" aria-hidden="true" />
+                      Trilhas
+                    </button>
+                  </>
+                ) : null}
                 <button
                   type="button"
                   className="flex w-full items-center gap-3 rounded-[10px] px-3 py-3 text-left text-sm font-semibold text-[#f63c3c] transition hover:bg-[#ffdbdf]"
@@ -179,13 +229,76 @@ export function DashboardShell() {
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-5 w-5 text-[#43d477]" aria-hidden="true" />
                 <div>
-                  <p className="text-sm font-bold">{profileLabels[session.user.profile]}</p>
+                  <p className="text-sm font-bold">{session.user.profile.name}</p>
                   <p className="text-xs text-white/70">Sessão autenticada</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {session.user.role === UserRole.Admin ? (
+          <div className="mt-8 grid gap-5 rounded-[15px] border border-[#c4e4da] bg-white p-6 shadow-[0_5px_12px_rgba(0,0,0,0.05)] md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.12em] text-[#43d477]">
+                Area administrativa
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-[#1f3b64]">Administracao da academia</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6f7682]">
+                Crie perfis, gerencie questionarios e organize a trilha de conteudos por perfil.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/admin/questionnaires"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-[#1f3b64] px-6 text-sm font-bold text-white transition hover:bg-[#152944]"
+              >
+                <FileQuestion className="mr-2 h-4 w-4" aria-hidden="true" />
+                Questionarios
+              </Link>
+              <Link
+                href="/admin/profiles"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-bold text-[#1f3b64] ring-1 ring-[#ececec] transition hover:ring-[#43d477]"
+              >
+                <UsersRound className="mr-2 h-4 w-4" aria-hidden="true" />
+                Perfis
+              </Link>
+              <Link
+                href="/admin/profile-trails"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-bold text-[#1f3b64] ring-1 ring-[#ececec] transition hover:ring-[#43d477]"
+              >
+                <BookOpenCheck className="mr-2 h-4 w-4" aria-hidden="true" />
+                Trilhas
+              </Link>
+              <Link
+                href="/admin/questionnaires/new"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-[#43d477] px-6 text-sm font-bold text-white shadow-[0_3px_6px_rgba(64,213,125,0.3)] transition hover:bg-[#1FB354]"
+              >
+                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                Novo questionario
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-8 grid gap-5 rounded-[15px] border border-[#c4e4da] bg-white p-6 shadow-[0_5px_12px_rgba(0,0,0,0.05)] md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.12em] text-[#43d477]">
+                Trilhas
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-[#1f3b64]">Comece sua jornada</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6f7682]">
+                Acesse os conteudos publicados para o seu perfil e responda os questionarios de cada etapa.
+              </p>
+            </div>
+            <Link
+              href="/trails"
+              className="inline-flex h-12 items-center justify-center rounded-full bg-[#43d477] px-6 text-sm font-bold text-white shadow-[0_3px_6px_rgba(64,213,125,0.3)] transition hover:bg-[#1FB354]"
+            >
+              <BookOpenCheck className="mr-2 h-4 w-4" aria-hidden="true" />
+              Iniciar trilhas
+            </Link>
+          </div>
+        )}
 
         <div className="mt-8 grid gap-5 md:grid-cols-3">
           {summaryCards.map((card) => (

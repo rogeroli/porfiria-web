@@ -3,6 +3,10 @@ import { ApiErrorResponse } from '@/types/api-response';
 
 export function getApiErrorMessage(error: unknown): string {
   if (error instanceof AxiosError) {
+    if (!error.response) {
+      return 'Não foi possível conectar à API. Verifique se o backend está em execução.';
+    }
+
     const response = error.response?.data as ApiErrorResponse | undefined;
     const message = response?.error.message;
 

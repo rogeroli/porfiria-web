@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoaderCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useChangePassword } from '../hooks/use-change-password';
 import {
@@ -15,12 +15,12 @@ import { getApiErrorMessage } from '../utils/get-api-error-message';
 
 export function ChangePasswordForm() {
   const router = useRouter();
-  const session = getAuthSession();
+  const [hasMounted, setHasMounted] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
   const changePasswordMutation = useChangePassword();
   const form = useForm<ChangePasswordFormData>({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: {
-      email: session?.user.email ?? '',
       currentPassword: '',
       newPassword: '',
       confirmPassword: '',
@@ -28,10 +28,25 @@ export function ChangePasswordForm() {
   });
 
   useEffect(() => {
-    if (!session) {
+    const timeoutId = window.setTimeout(() => {
+      const session = getAuthSession();
+
+      setHasSession(Boolean(session));
+      setHasMounted(true);
+
+      if (!session) {
+        router.replace('/login');
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [router]);
+
+  useEffect(() => {
+    if (hasMounted && !hasSession) {
       router.replace('/login');
     }
-  }, [router, session]);
+  }, [hasMounted, hasSession, router]);
 
   async function onSubmit(data: ChangePasswordFormData): Promise<void> {
     const updatedSession = await changePasswordMutation.mutateAsync(data);
@@ -39,32 +54,12 @@ export function ChangePasswordForm() {
     router.replace('/dashboard');
   }
 
-  if (!session) {
+  if (!hasMounted || !hasSession) {
     return null;
   }
 
   return (
     <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)} noValidate>
-      <div>
-        <label className="text-sm font-bold text-[#343434]" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="email"
-          className="mt-2 h-12 w-full rounded-[10px] border border-[#ececec] bg-white px-4 text-sm text-[#343434] shadow-sm transition placeholder:text-[#818894] focus:border-[#43d477] focus:ring-[#43d477]"
-          aria-invalid={Boolean(form.formState.errors.email)}
-          aria-describedby={form.formState.errors.email ? 'email-error' : undefined}
-          {...form.register('email')}
-        />
-        {form.formState.errors.email ? (
-          <p className="mt-2 text-sm font-medium text-[#f63c3c]" id="email-error">
-            {form.formState.errors.email.message}
-          </p>
-        ) : null}
-      </div>
-
       <div>
         <label className="text-sm font-bold text-[#343434]" htmlFor="currentPassword">
           Senha atual ou temporaria

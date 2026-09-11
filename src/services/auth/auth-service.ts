@@ -1,6 +1,7 @@
 import { ApiSuccessResponse } from '@/types/api-response';
 import {
   AuthSession,
+  AuthUser,
   ChangePasswordInput,
   ForgotPasswordInput,
   LoginUserInput,
@@ -18,6 +19,12 @@ export async function registerUser(input: RegisterUserInput): Promise<Registered
 
 export async function loginUser(input: LoginUserInput): Promise<AuthSession> {
   const response = await apiClient.post<ApiSuccessResponse<AuthSession>>('/auth/login', input);
+
+  return response.data.data;
+}
+
+export async function getCurrentUser(): Promise<AuthUser> {
+  const response = await apiClient.get<ApiSuccessResponse<AuthUser>>('/auth/me');
 
   return response.data.data;
 }
